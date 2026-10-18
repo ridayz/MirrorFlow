@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark light" />
+<title>MirrorFlow</title>
+<link rel="stylesheet" href="/static/style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%234c9aff'/><rect x='9' y='6' width='14' height='20' rx='3' fill='%23ffffff'/><circle cx='16' cy='23' r='1.4' fill='%234c9aff'/></svg>" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= title bar (traffic lights + judul jendela) ================= -->
+  <div class="titlebar">
+    <div class="traffic">
+      <button class="light close" id="btn-close" title="Hentikan sesi mirror"></button>
+      <button class="light min" id="btn-min" title="Jeda / lanjut stream"></button>
+      <button class="light zoom" id="btn-zoom" title="Layar penuh"></button>
+    </div>
+    <div class="title">
+      <strong id="win-title">MirrorFlow</strong>
+      <span id="win-sub">Belum ada sesi</span>
+    </div>
+  </div>
+
+  <!-- ================= menu bar (susunan menu mengikuti Simulator di Xcode) ================= -->
+  <nav class="menubar" id="menubar">
+    <span class="mb-brand" title="MirrorFlow">
+      <svg viewBox="0 0 32 32" width="15" height="15" aria-hidden="true"><rect width="32" height="32" rx="8" fill="currentColor" opacity=".18"/><rect x="9" y="6" width="14" height="20" rx="3" fill="currentColor"/></svg>
+    </span>
+
+    <div class="menu">
+      <button class="menu-title" type="button">MirrorFlow</button>
+      <div class="menu-items">
+        <button class="menu-item" data-act="about" type="button">Tentang MirrorFlow</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="theme" type="button">Tema terang / gelap</button>
+        <button class="menu-item" data-act="refresh" type="button">Muat ulang daftar device</button>
+      </div>
+    </div>
+
+    <div class="menu">
+      <button class="menu-title" type="button">Berkas</button>
+      <div class="menu-items">
+        <button class="menu-item" data-act="shot" type="button">Simpan tangkapan layar</button>
+        <button class="menu-item" data-act="run" type="button">Jalankan sesi mirror</button>
+        <button class="menu-item" data-act="stop" type="button">Hentikan sesi</button>
+      </div>
+    </div>
+
+    <div class="menu">
+      <button class="menu-title" type="button">Device</button>
+      <div class="menu-items">
+        <button class="menu-item" data-act="home" type="button">Home</button>
+        <button class="menu-item" data-act="back" type="button">Back</button>
+        <button class="menu-item" data-act="recents" type="button">Recent apps</button>
+        <button class="menu-item" data-act="menu-key" type="button">Menu</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="power" type="button">Kunci / bangunkan layar</button>
+        <button class="menu-item" data-act="rotate" type="button">Putar layar</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="vol-up" type="button">Volume naik</button>
+        <button class="menu-item" data-act="vol-down" type="button">Volume turun</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="notifications" type="button">Panel notifikasi</button>
+        <button class="menu-item" data-act="settings" type="button">Pengaturan cepat</button>
+        <button class="menu-item" data-act="collapse" type="button">Tutup semua panel</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="pause" type="button">Jeda / lanjut stream</button>
+      </div>
+    </div>
+
+    <div class="menu">
+      <button class="menu-title" type="button">I/O</button>
+      <div class="menu-items">
+        <button class="menu-item" data-act="awake" type="button"><span class="tick"></span>Layar tetap menyala</button>
+        <button class="menu-item" data-act="touches" type="button"><span class="tick"></span>Tampilkan sentuhan</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="help-keys" type="button">Tombol keyboard</button>
+        <button class="menu-item" data-act="help-input" type="button">Kontrol lewat mouse</button>
+      </div>
+    </div>
+
+    <div class="menu">
+      <button class="menu-title" type="button">Tampilan</button>
+      <div class="menu-items">
+        <button class="menu-item" data-act="nav" type="button"><span class="tick"></span>Navigator</button>
+        <button class="menu-item" data-act="insp" type="button"><span class="tick"></span>Inspector</button>
+        <button class="menu-item" data-act="console" type="button"><span class="tick"></span>Konsol</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" data-act="frame" type="button"><span class="tick"></span>Bingkai device iPhone</button>
+        <button class="menu-item" data-act="motion" type="button"><span class="tick"></span>Animasi UI</button>
+        <button class="menu-item" data-act="fullscreen" type="button">Layar penuh</button>
+      </div>
+    </div>
+
+    <div class="menu">
+      <button class="menu-title" type="button">Bantuan</button>
+      <div class="menu-items">
+        <button class="menu-item" data-act="help-start" type="button">Mulai dari mana</button>
+        <button class="menu-item" data-act="help-trouble" type="button">Kalau device tidak muncul</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= toolbar (aksi cepat Xcode) ================= -->
+  <header class="toolbar">
+    <div class="tb-left">
+      <div class="seg">
+        <button class="tool" id="btn-run" title="Jalankan / sambungkan sesi">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M7 4.6 19 12 7 19.4z" fill="currentColor"/></svg>
+        </button>
+        <button class="tool" id="btn-stop" title="Hentikan sesi">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="1.6" fill="currentColor"/></svg>
+        </button>
+      </div>
+
+      <div class="seg">
+        <button class="tool" id="btn-refresh" title="Muat ulang daftar device">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7V4m0 16v-4.7l-2.3 2.3A8 8 0 0 1 4 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="tool" id="btn-demo" title="Coba mode demo">
+          <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 6v4M12 14v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="tb-title">
+      <strong id="win-title-2">MirrorFlow</strong>
+      <span id="win-sub-2">Belum ada sesi</span>
+      <span class="pill" id="conn-pill">Terputus</span>
+      <div class="status-row">
+        <span class="dot" id="status-dot"></span>
+        <span id="status-text">Menghubungkan ke server…</span>
+      </div>
+    </div>
+
+    <div class="tb-right">
+      <div class="seg">
+        <button class="tool" data-cmd="back" title="Back">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="tool" data-cmd="home" title="Home">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
+        </button>
+        <button class="tool" data-cmd="recents" title="Recent apps">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/></svg>
+        </button>
+      </div>
+
+      <div class="seg">
+        <button class="tool" data-cmd="notifications" title="Panel notifikasi">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M7 9a5 5 0 0 1 10 0c0 5 2 6 2 6H5s2-1 2-6M10.5 19.5a1.8 1.8 0 0 0 3 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="tool" data-cmd="settings" title="Pengaturan cepat">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tool" data-cmd="rotate" title="Putar layar">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.4 5.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M20 5v6h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="tool" data-cmd="power" title="Matikan / nyalakan layar">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4v8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M7.5 6.6a7 7 0 1 0 9 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div class="seg">
+        <button class="tool" id="btn-pause" title="Jeda / lanjut stream">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tool" id="btn-shot" title="Simpan tangkapan layar (PNG)">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.3l.9-1.6h6.6L16.2 6h1.3A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12.3" r="3.1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+        </button>
+        <button class="tool" id="btn-fullscreen" title="Layar penuh">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5A1.5 1.5 0 0 1 18.5 20H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+        <button class="tool" id="btn-theme" title="Tema terang / gelap">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="8.1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.9a8.1 8.1 0 0 1 0 16.2z" fill="currentColor"/></svg>
+        </button>
+      </div>
+
+      <div class="seg">
+        <button class="tool" id="btn-nav-toggle" title="Tampilkan / sembunyikan navigator">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9.5 4.5v15" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="4.5" width="6.5" height="15" rx="2.5" fill="currentColor" opacity=".55"/></svg>
+        </button>
+        <button class="tool" id="btn-insp-toggle" title="Tampilkan / sembunyikan inspector">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14.5 4.5v15" stroke="currentColor" stroke-width="1.6"/><rect x="14.5" y="4.5" width="6.5" height="15" rx="2.5" fill="currentColor" opacity=".55"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= badan: navigator | kanvas | inspector ================= -->
+  <div class="body">
+    <div class="cluster">
+      <div class="workarea">
+        <nav class="nav">
+          <div class="panel-inner">
+            <div class="pane-head">
+              <span class="pane-title">Perangkat</span>
+              <span class="pane-count" id="dev-count"></span>
+            </div>
+            <ul class="device-list" id="device-list"></ul>
+            <p class="hint" id="device-hint">Mencari device…</p>
+          </div>
+        </nav>
+
+        <main class="canvas-area">
+          <div class="viewport" id="viewport">
+            <div class="screen-shell" id="shell">
+              <div class="side-btn left action"></div>
+              <div class="side-btn left vol-up"></div>
+              <div class="side-btn left vol-down"></div>
+              <div class="side-btn right power"></div>
+              <canvas id="screen" width="360" height="720"></canvas>
+              <div class="island" aria-hidden="true"></div>
+            </div>
+
+            <button class="fs-inspector-toggle" id="fs-inspector-toggle" title="Tampilkan/ sembunyikan panel kontrol" aria-label="Toggle inspector panel">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M14.5 4.5v15" stroke="currentColor" stroke-width="1.6"/><rect x="14.5" y="4.5" width="6.5" height="15" rx="2.5" fill="currentColor" opacity=".55"/></svg>
+            </button>
+
+            <div class="overlay" id="overlay">
+              <div class="overlay-card">
+                <div class="overlay-icon">
+                  <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9.5 8.5h5M9.5 11.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </div>
+                <div class="overlay-title" id="overlay-title">Menghubungkan…</div>
+                <div class="overlay-text" id="overlay-text">Mencari device Android via ADB</div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <aside class="inspector">
+        <div class="panel-inner">
+
+          <section class="sect">
+            <button class="sect-title" type="button">Sesi</button>
+            <div class="sect-body">
+              <div class="rows">
+                <div class="row"><span class="k">Device</span><code class="v" id="insp-device">—</code></div>
+                <div class="row"><span class="k">Sistem</span><code class="v" id="dev-detail">—</code></div>
+                <div class="row"><span class="k">Resolusi</span><code class="v" id="stat-res">—</code></div>
+                <div class="row"><span class="k">FPS</span><code class="v" id="stat-fps">—</code></div>
+                <div class="row"><span class="k">Bitrate</span><code class="v" id="stat-net">—</code></div>
+                <div class="row"><span class="k">Codec</span><code class="v" id="stat-codec">—</code></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sect">
+            <button class="sect-title" type="button">Kualitas</button>
+            <div class="sect-body">
+              <div class="rows">
+                <div class="row">
+                  <label class="k" for="opt-size">Resolusi maks</label>
+                  <select id="opt-size" class="v-select">
+                    <option value="0">Native</option>
+                    <option value="2560">2560 px</option>
+                    <option value="1920">1920 px</option>
+                    <option value="1600">1600 px</option>
+                    <option value="1280">1280 px</option>
+                    <option value="1024">1024 px</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <label class="k" for="opt-fps">Batas FPS</label>
+                  <select id="opt-fps" class="v-select">
+                    <option value="0">Tanpa batas</option>
+                    <option value="60">60</option>
+                    <option value="30">30</option>
+                    <option value="24">24</option>
+                    <option value="15">15</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <label class="k" for="opt-bitrate">Bitrate <span class="value" id="opt-bitrate-value">Auto</span></label>
+                  <input type="range" id="opt-bitrate" min="1" max="80" step="1" value="30" disabled />
+                  <label class="switch-inline">
+                    <input type="checkbox" id="opt-bitrate-auto" class="switch" checked />
+                    Auto
+                  </label>
+                </div>
+                <div class="row">
+                  <label class="k" for="opt-awake">Layar tetap menyala</label>
+                  <input type="checkbox" id="opt-awake" class="switch" checked />
+                </div>
+                <div class="row">
+                  <label class="k" for="opt-touches">Tampilkan sentuhan</label>
+                  <input type="checkbox" id="opt-touches" class="switch" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="sect">
+            <button class="sect-title" type="button">Tampilan</button>
+            <div class="sect-body">
+              <div class="rows">
+                <div class="row">
+                  <label class="k" for="opt-frame">Bingkai iPhone</label>
+                  <input type="checkbox" id="opt-frame" class="switch" checked />
+                </div>
+                <div class="row">
+                  <label class="k" for="opt-motion">Animasi UI</label>
+                  <input type="checkbox" id="opt-motion" class="switch" checked />
+                </div>
+                <p class="note">
+                  Matikan bingkai untuk melihat layar apa adanya, tanpa radius sudut
+                  dan Dynamic Island yang menutupi isi layar. Animasi UI bisa
+                  dimatikan terpisah kalau gerakannya mengganggu. Dynamic Island
+                  otomatis hilang saat landscape (mirip iPhone asli).
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="sect collapsed">
+            <button class="sect-title" type="button">adb</button>
+            <div class="sect-body">
+              <div class="rows">
+                <div class="row"><span class="k">Path</span><code class="v" id="adb-path">—</code></div>
+                <div class="row"><span class="k">Versi</span><code class="v" id="version">—</code></div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </aside>
+
+    </div>
+
+    <div class="console" id="console">
+      <header class="console-head">
+        <span class="mono">Konsol</span>
+        <button class="icon-btn" id="btn-console" title="Sembunyikan konsol">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M18 15l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-clear-log" title="Bersihkan konsol">
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </header>
+      <div class="console-body" id="console-body">
+        <div class="log-line" id="log-line"></div>
+        <ul class="log-list" id="log-list"></ul>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script type="module" src="/static/app.js"></script>
+</body>
+</html>

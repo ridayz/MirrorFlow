@@ -1,0 +1,1139 @@
+/* ============================================================
+   MirrorFlow - tampilan gaya Xcode / Hopper di macOS
+
+   Tata letak (mengikuti Xcode, referensi: Hopper Disassembler):
+     toolbar   : traffic light · run/stop · judul device · tombol perangkat
+     navigator : daftar device (kiri)
+     kanvas    : layar HP di dalam model device iPhone (tengah)
+     inspector : panel bertingkat label/nilai (kanan)
+     konsol    : log aktivitas (bawah, seperti debug area Xcode)
+
+   Tema gelap adalah tampilan utama (seperti Xcode dark / Hopper);
+   tema terang mengikuti sistem kalau OS-nya terang.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* --- permukaan --- */
+  --app: #1b1b1d;
+  --chrome: #2a2a2c;
+  --pane: #202022;
+  --canvas: #131315;
+  --console: #191919;
+  --row: #2c2c30;
+  --row-hover: #36363b;
+
+  /* --- garis --- */
+  --border: #3a3a3e;
+  --hair: #2f2f32;
+
+  /* --- teks --- */
+  --text: #dcdce0;
+  --dim: #9b9ba1;
+  --faint: #6d6d74;
+
+  /* --- aksen (biru sistem macOS) --- */
+  --accent: #4c9aff;
+  --accent-press: #3d8ae6;
+  --accent-soft: rgba(76, 154, 255, 0.16);
+  --accent-ring: rgba(76, 154, 255, 0.34);
+
+  --ok: #4ec26a;
+  --warn: #e0a33a;
+  --err: #ff5f56;
+  --green: #7ec699;
+
+  /* --- model device --- */
+  --frame-1: #7a7a82;
+  --frame-2: #33333a;
+  --frame-3: #17171a;
+  --island: #000000;
+  --shadow-device: 0 26px 60px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.5);
+
+  --hud-bg: rgba(40, 40, 44, 0.94);
+
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+    "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --toolbar-h: 52px;
+  --nav-w: 240px;
+  --inspector-w: 288px;
+  --console-body-max: 122px;
+}
+
+/* ---------- tema terang: hanya kalau sistem memintanya ---------- */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+
+    --app: #ececee;
+    --chrome: #e4e4e7;
+    --pane: #f4f4f5;
+    --canvas: #d8d8dc;
+    --console: #f8f8f9;
+    --row: #ffffff;
+    --row-hover: #ececef;
+
+    --border: #c9c9cf;
+    --hair: #d9d9dd;
+
+    --text: #1c1c1e;
+    --dim: #5c5c63;
+    --faint: #8a8a91;
+
+    --accent: #0a6cff;
+    --accent-press: #0059d6;
+    --accent-soft: rgba(10, 108, 255, 0.12);
+    --accent-ring: rgba(10, 108, 255, 0.3);
+
+    --ok: #1f9d3f;
+    --warn: #b97a12;
+    --err: #d70015;
+    --green: #17795a;
+
+    --frame-1: #e2e2e6;
+    --frame-2: #9a9aa1;
+    --frame-3: #5d5d64;
+    --island: #000000;
+    --shadow-device: 0 22px 48px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.18);
+
+    --hud-bg: rgba(250, 250, 252, 0.95);
+  }
+}
+
+/* ---------- tema terang: dipaksa manual ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --app: #ececee;
+  --chrome: #e4e4e7;
+  --pane: #f4f4f5;
+  --canvas: #d8d8dc;
+  --console: #f8f8f9;
+  --row: #ffffff;
+  --row-hover: #ececef;
+
+  --border: #c9c9cf;
+  --hair: #d9d9dd;
+
+  --text: #1c1c1e;
+  --dim: #5c5c63;
+  --faint: #8a8a91;
+
+  --accent: #0a6cff;
+  --accent-press: #0059d6;
+  --accent-soft: rgba(10, 108, 255, 0.12);
+  --accent-ring: rgba(10, 108, 255, 0.3);
+
+  --ok: #1f9d3f;
+  --warn: #b97a12;
+  --err: #d70015;
+  --green: #17795a;
+
+  --frame-1: #e2e2e6;
+  --frame-2: #9a9aa1;
+  --frame-3: #5d5d64;
+  --shadow-device: 0 22px 48px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.18);
+
+  --hud-bg: rgba(250, 250, 252, 0.95);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  font-family: var(--font);
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--app);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 28px 30px var(--toolbar-h) 1fr;
+  height: 100vh;
+  background: var(--app);
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--hair);
+  user-select: none;
+}
+.titlebar .traffic { display: flex; align-items: center; gap: 6px; }
+.titlebar .title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+.titlebar .title strong { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.titlebar .title span { font-size: 10px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.mirroring .titlebar .title span { color: var(--accent); }
+
+.body {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 0;
+  padding-bottom: 8px;  /* ruang di bawah agar console tidak kepotong */
+}
+
+.cluster {
+  display: grid;
+  grid-template-columns: 1fr var(--inspector-w);
+  min-width: 0;
+  min-height: 0;
+}
+.cluster.insp-hidden { grid-template-columns: 1fr 0px; }
+
+.workarea {
+  display: grid;
+  grid-template-columns: var(--nav-w) 1fr;
+  min-width: 0;
+  min-height: 0;
+}
+.workarea.nav-hidden { grid-template-columns: 0px 1fr; }
+
+.console {
+  grid-column: 1 / -1;
+}
+
+.spacer { flex: 1 1 auto; }
+
+/* ============================================================
+   menu bar (macOS)
+   ============================================================ */
+.menubar {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 30px;
+  padding: 0 10px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--hair);
+  font-size: 12px;
+  user-select: none;
+}
+
+.mb-brand {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  color: var(--accent);
+  margin-right: 2px;
+}
+
+.menu { position: relative; }
+
+.menu-title {
+  font: inherit;
+  color: var(--text);
+  padding: 4px 9px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-title:hover { background: var(--row-hover); }
+.menu.open .menu-title { background: var(--accent); color: #fff; }
+
+.menu-items {
+  display: none;
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  min-width: 248px;
+  padding: 5px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--pane);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+}
+.menu.open .menu-items { display: block; }
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 9px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.menu-item:hover { background: var(--accent); color: #fff; }
+
+.menu-item .tick { width: 11px; flex: 0 0 11px; }
+.menu-item.checked .tick::before { content: "\2713"; font-weight: 700; }
+
+.menu-sep { height: 1px; margin: 5px 8px; background: var(--border); }
+
+/* ============================================================
+   toolbar
+   ============================================================ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  background: var(--chrome);
+  border-bottom: 1px solid var(--hair);
+  user-select: none;
+}
+
+.tb-left,
+.tb-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+/* traffic light macOS */
+.traffic { display: flex; align-items: center; gap: 8px; padding-right: 6px; }
+
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0, 0, 0, 0.22);
+  padding: 0;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.light.close { background: #ff5f57; }
+.light.min { background: #febc2e; }
+.light.zoom { background: #28c840; }
+.light:hover { filter: brightness(1.14); }
+.light:active { filter: brightness(0.88); }
+
+/* grup tombol bergaya segmented control */
+.seg {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--pane);
+  overflow: hidden;
+}
+.seg .tool + .tool { border-left: 1px solid var(--border); }
+
+.tool {
+  width: 30px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+}
+.tool:hover { background: var(--row-hover); color: var(--text); }
+.tool:active { background: var(--accent-soft); }
+.tool.active { background: var(--accent); color: #fff; }
+.tool:disabled { opacity: 0.32; cursor: default; }
+
+/* judul device di tengah baris judul */
+.tb-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  overflow: hidden;
+}
+.tb-title > strong {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.tb-title > span { /* win-sub-2 */
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.tb-title .pill { margin-top: 2px; }
+.tb-title .status-row { font-size: 10px; }
+body.mirroring .tb-title > span { color: var(--accent); }
+
+/* ============================================================
+   navigator (kiri)
+   ============================================================ */
+.nav {
+  width: 100%;
+  background: var(--pane);
+  border-right: 1px solid var(--hair);
+  overflow: hidden;
+  min-width: 0;
+  transition:
+    border-right-width 0.2s ease,
+    background-color 0.24s ease;
+}
+
+/* isi panel lebarnya dikunci supaya teks tidak ikut me-reflow saat panel meluncur */
+.panel-inner {
+  width: var(--panel-w, var(--nav-w));
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 10px 12px;
+  overflow-y: auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 4px;
+}
+.pane-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--faint);
+}
+.pane-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.device-list { list-style: none; margin: 0; padding: 0; min-width: 0; }
+.device-list li + li { margin-top: 1px; }
+
+.device {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 7px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  min-width: 0;
+  transition: background 0.13s ease, border-color 0.13s ease;
+}
+.device:hover { background: var(--row-hover); }
+.device.active { background: var(--accent-soft); border-color: var(--accent-ring); }
+
+.device .avatar {
+  width: 26px; height: 26px; flex: 0 0 26px;
+  border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 10px; font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-ring);
+}
+.device .info { min-width: 0; display: flex; flex-direction: column; }
+.device .info strong {
+  font-size: 12px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.device .info span {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.device .state {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--faint);
+  background: var(--row);
+}
+.device .state.online { color: var(--ok); background: color-mix(in srgb, var(--ok) 18%, transparent); }
+
+.hint {
+  margin: 4px 4px 0;
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--faint);
+}
+
+/* ============================================================
+   kanvas + model device iPhone
+   ============================================================ */
+.canvas-area { min-width: 0; min-height: 0; display: grid; }
+
+.viewport {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(76, 154, 255, 0.05), transparent 60%),
+    var(--canvas);
+}
+
+.screen-shell {
+  position: relative;
+  padding: var(--phone-pad, 12px);
+  border-radius: var(--phone-radius, 46px);
+  background: linear-gradient(150deg, var(--frame-1), var(--frame-2) 44%, var(--frame-3));
+  box-shadow:
+    var(--shadow-device),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.3);
+  display: none;
+  isolation: isolate;
+}
+.screen-shell.visible { display: block; animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1); }
+
+@keyframes pop {
+  from { opacity: 0; transform: scale(0.975) translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* mode polos: layar apa adanya, tidak ada yang dipotong */
+.screen-shell.no-frame {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--border), var(--shadow-device);
+}
+.screen-shell.no-frame .island,
+.screen-shell.no-frame .side-btn { display: none; }
+.screen-shell.no-frame #screen { border-radius: 0; }
+
+#screen {
+  display: block;
+  width: 360px;
+  height: 720px;
+  border-radius: var(--screen-radius, 36px);
+  background: #000;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* Dynamic Island */
+.island {
+  position: absolute;
+  top: var(--island-top, 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--island-w, 96px);
+  height: var(--island-h, 26px);
+  border-radius: 999px;
+  background: var(--island);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* tombol fisik, menempel di sisi bodi */
+.side-btn {
+  position: absolute;
+  width: 4px;
+  height: var(--side-h, 30px);
+  background: linear-gradient(180deg, var(--frame-1), var(--frame-2));
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.4);
+}
+.side-btn.left { left: -2px; border-radius: 2px 0 0 2px; }
+.side-btn.right { right: -2px; border-radius: 0 2px 2px 0; }
+.side-btn.action { top: 19%; }
+.side-btn.vol-up { top: 27%; }
+.side-btn.vol-down { top: 35%; }
+.side-btn.power { top: 29%; height: calc(var(--side-h, 30px) * 1.5); }
+
+/* ---------- overlay ---------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  transition: opacity 0.24s ease;
+}
+.overlay.hidden { opacity: 0; pointer-events: none; }
+
+.overlay-card {
+  max-width: 420px;
+  text-align: center;
+  padding: 26px 24px 22px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--pane);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.overlay-icon {
+  width: 48px; height: 48px;
+  margin: 0 auto 13px;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-ring);
+}
+.overlay-card h3 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+.overlay-card p { margin: 0 0 16px; font-size: 12px; line-height: 1.65; color: var(--dim); }
+.overlay-card b { color: var(--text); font-weight: 600; }
+.overlay-actions { display: flex; gap: 8px; justify-content: center; }
+
+.btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 15px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--row);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.14s ease;
+}
+.btn:hover { background: var(--row-hover); }
+.btn:active { transform: scale(0.985); }
+.btn.primary {
+  color: #fff;
+  border-color: transparent;
+  background: var(--accent);
+}
+.btn.primary:hover { background: var(--accent-press); }
+.btn.ghost { background: transparent; }
+
+/* ============================================================
+   inspector (kanan)
+   ============================================================ */
+.inspector {
+  width: 100%;
+  background: var(--pane);
+  border-left: 1px solid var(--hair);
+  overflow: hidden;
+  min-width: 0;
+  transition:
+    border-left-width 0.2s ease,
+    background-color 0.24s ease;
+}
+.inspector > .panel-inner {
+  width: var(--panel-w, var(--inspector-w));
+  display: block;
+  padding: 0;
+  gap: 0;
+  min-width: 0;
+}
+
+.sect { border-bottom: 1px solid var(--hair); }
+
+.sect-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--dim);
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.sect-title:hover { background: var(--row-hover); color: var(--text); }
+.sect-title::before {
+  content: "";
+  width: 0; height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sect:not(.collapsed) .sect-title::before { transform: rotate(90deg); }
+
+/* buka/tutup bertingkat: pakai max-height agar benar-benar beranimasi */
+.sect-body {
+  overflow: hidden;
+  max-height: 500px;  /* cukup besar untuk konten */
+}
+.sect.collapsed .sect-body { max-height: 0; opacity: 0; }
+.sect-body > .rows {
+  padding: 2px 12px 12px;
+  transition: padding-block 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sect.collapsed .sect-body > .rows { padding-block: 0; }
+
+.rows { padding: 2px 12px 12px; display: flex; flex-direction: column; }
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 26px;
+  padding: 3px 0;
+}
+.row .k {
+  flex: 0 0 auto;
+  min-width: 96px;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--dim);
+}
+.row .k .value {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--accent);
+}
+.row .v {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--row);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row .v-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--row);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.row .v-select:hover { background: var(--row-hover); }
+.row .v-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.row option { background: var(--pane); color: var(--text); }
+
+.note {
+  margin: 8px 0 2px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--faint);
+}
+
+input[type="range"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 18px;
+  margin: 0; padding: 0;
+  background: transparent;
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--row);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: #f2f2f4;
+  border: 0.5px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* switch ala macOS */
+input.switch {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 0 0 auto;
+  width: 34px; height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--row);
+  box-shadow: inset 0 0 0 1px var(--border);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+input.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+input.switch:checked { background: var(--ok); box-shadow: none; }
+input.switch:checked::after { transform: translateX(14px); }
+
+/* switch inline (dengan label "Auto" di sebelah) */
+.switch-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--dim);
+  cursor: pointer;
+}
+.switch-inline input.switch {
+  width: 28px; height: 16px;
+}
+.switch-inline input.switch::after {
+  width: 12px; height: 12px;
+  top: 2px; left: 2px;
+}
+.switch-inline input.switch:checked::after { transform: translateX(12px); }
+.switch-inline:has(input:checked) { color: var(--ok); }
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: var(--dim);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+.icon-btn:hover { background: var(--row-hover); color: var(--text); }
+
+/* ============================================================
+   konsol (debug area)
+   ============================================================ */
+.console {
+  border-top: 1px solid var(--hair);
+  background: var(--console);
+  display: grid;
+  grid-template-rows: 30px 1fr;
+  height: auto;
+  min-height: 30px;
+  max-height: 40vh;  /* batas tinggi agar tidak menutupi canvas */
+  overflow: hidden;
+  transition: background-color 0.24s ease;
+}
+
+.console-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--hair);
+  font-size: 11.5px;
+  color: var(--dim);
+}
+
+.dot {
+  width: 7px; height: 7px; flex: 0 0 7px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition: background 0.2s ease;
+}
+.dot.on { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 20%, transparent); }
+.dot.busy { background: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 20%, transparent); }
+.dot.err { background: var(--err); box-shadow: 0 0 0 3px color-mix(in srgb, var(--err) 20%, transparent); }
+
+.status-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34%; }
+
+.status-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 36%;
+}
+
+.log-line {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--green);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: var(--dim);
+  background: var(--row);
+}
+.pill::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.pill.on { color: var(--ok); background: color-mix(in srgb, var(--ok) 18%, transparent); }
+.pill.on::before { background: var(--ok); }
+.pill.busy { color: var(--warn); background: color-mix(in srgb, var(--warn) 18%, transparent); }
+.pill.busy::before { background: var(--warn); }
+
+.console-body {
+  overflow-y: auto;
+  padding: 6px 12px 10px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.75;
+  color: var(--green);
+  max-height: var(--console-body-max, 122px);
+  transition: opacity 0.2s ease;
+}
+.log-row { display: flex; gap: 8px; white-space: pre-wrap; word-break: break-word; }
+.log-row .t { flex: 0 0 auto; color: var(--faint); }
+.log-row.warn { color: var(--warn); }
+.log-row.err { color: var(--err); }
+.log-row.info { color: var(--dim); }
+
+/* konsol dilipat */
+.app.console-hidden .console-body { --console-body-max: 0; opacity: 0; }
+.app.console-hidden #btn-console svg { transform: rotate(180deg); }
+
+/* panel disembunyikan lewat toolbar: grid-template-columns yang dianimasikan */
+
+/* ============================================================
+   toast
+   ============================================================ */
+.toast {
+  position: absolute;
+  bottom: 18px; left: 50%;
+  transform: translate(-50%, 10px);
+  padding: 8px 15px;
+  border-radius: 999px;
+  background: var(--hud-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.22s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.err { background: color-mix(in srgb, var(--err) 86%, #000); color: #fff; border-color: transparent; }
+
+/* ============================================================
+   layar penuh
+   ============================================================ */
+body.fullscreen .toolbar,
+body.fullscreen .nav,
+body.fullscreen .inspector,
+body.fullscreen .console { display: none; }
+body.fullscreen .body { grid-template-columns: 1fr; }
+body.fullscreen .workarea { grid-template-columns: 1fr; }
+body.fullscreen .viewport { padding: 0; background: #000; }
+body.fullscreen .screen-shell,
+body.fullscreen .screen-shell.no-frame { padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+body.fullscreen .screen-shell .island,
+body.fullscreen .screen-shell .side-btn { display: none; }
+body.fullscreen #screen { border-radius: 0; }
+
+/* Floating inspector toggle in fullscreen */
+body.fullscreen .fs-inspector-toggle {
+  display: flex !important;
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--hud-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+body.fullscreen .fs-inspector-toggle:hover { transform: scale(1.08); background: var(--row-hover); }
+body.fullscreen .fs-inspector-toggle svg { width: 22px; height: 22px; }
+body.fullscreen.inspector-visible .inspector { display: block !important; }
+body.fullscreen.inspector-visible .body { grid-template-columns: 1fr 288px; }
+body.fullscreen.inspector-visible .workarea { grid-template-columns: var(--nav-w) 1fr; }
+
+/* ============================================================
+   scrollbar
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 150, 0.42);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 150, 0.66); background-clip: content-box; }
+
+/* ============================================================
+   responsif
+   ============================================================ */
+@media (max-width: 1240px) {
+  :root { --inspector-w: 258px; }
+}
+@media (max-width: 1080px) {
+  .tb-right .seg:nth-child(2) { display: none; }   /* grup panel notifikasi */
+}
+@media (max-width: 940px) {
+  :root { --nav-w: 200px; }
+  .toolbar { gap: 10px; }
+}
+@media (max-width: 780px) {
+  .nav { width: 0; border-right-width: 0; }
+  .console-head .mono { display: none; }
+}
+
+/* ============================================================
+   gerakan (animasi UI)
+   ============================================================ */
+
+/* jendela masuk */
+@keyframes appIn {
+  from { opacity: 0; transform: scale(0.994); }
+  to { opacity: 1; transform: none; }
+}
+.app { animation: appIn 0.34s cubic-bezier(0.2, 0.9, 0.25, 1); }
+
+/* menu bar mekar turun seperti menu macOS */
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-7px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+.menu-items { transform-origin: top left; }
+.menu.open .menu-items { animation: menuIn 0.16s cubic-bezier(0.2, 0.9, 0.3, 1); }
+
+/* device muncul: naik sambil membesar */
+@keyframes deviceIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.965); }
+  to { opacity: 1; transform: none; }
+}
+.screen-shell.visible { animation: deviceIn 0.42s cubic-bezier(0.2, 0.9, 0.25, 1); }
+
+/* kanvas ikut beranimasi waktu ukurannya berubah (toggle bingkai / panel) */
+.viewport.morph #screen {
+  transition:
+    width 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    height 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.viewport.morph .screen-shell {
+  transition:
+    padding 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* kartu overlay masuk halus */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.overlay-card { animation: cardIn 0.26s cubic-bezier(0.2, 0.9, 0.3, 1); }
+
+/* titik status berdenyut waktu sedang sibuk */
+@keyframes dotPulse {
+  0%, 100% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 30%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--warn) 0%, transparent); }
+}
+.dot.busy { animation: dotPulse 1.5s ease-in-out infinite; }
+
+/* tombol terasa ditekan */
+.tool svg, .icon-btn svg, .light { transition: transform 0.12s ease, filter 0.15s ease; }
+.tool:active svg, .icon-btn:active svg { transform: scale(0.88); }
+.light:active { transform: scale(0.9); }
+
+/* ganti tema terang/gelap tidak menyentak */
+body, .app, .menubar, .toolbar, .viewport, .seg,
+.row .v, .row .v-select, .device, .pane-title, .hint, .status-text, .mono {
+  transition-property: background-color, border-color, color;
+  transition-duration: 0.24s;
+  transition-timing-function: ease;
+}
+
+/* kontrol gerakan: diatur lewat Tampilan > Animasi UI (tersimpan di peramban).
+   Kalau pengguna belum menetapkan, hormati permintaan sistem (prefers-reduced-motion). */
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion]) *,
+  :root:not([data-motion]) *::before,
+  :root:not([data-motion]) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+mf.out.log
+
+# Assets generated
+assets/demo.h264
+assets/demo.json
+
+# Local config
+*.local.py
+.env
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Temp
+tmp/
+temp/
+*.tmp
