@@ -728,6 +728,29 @@ function toggleFullscreen() {
   else document.documentElement.requestFullscreen?.();
 }
 
+/* ============================================================
+   STREAM SOURCE MODE — untuk TikTok Studio / OBS
+   Toggle: Alt+S atau tombol di toolbar
+   Efek: nyembunyiin semua UI, canvas doang yang tampil
+   ============================================================ */
+function toggleStreamSource() {
+  document.body.classList.toggle('stream-source');
+  const isSource = document.body.classList.contains('stream-source');
+  toast(isSource ? 'Mode Stream Source AKTIF — buka TikTok Studio, pilih Window Capture' : 'Mode Stream Source NONAKTIF');
+  fitCanvas();
+}
+
+// Keyboard shortcut: Alt+S
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    toggleStreamSource();
+  }
+});
+
+// Tombol di toolbar
+$('btn-stream-source')?.addEventListener('click', toggleStreamSource);
+
 /* ---------------- menu bar ala macOS ---------------- */
 const menubar = $('menubar');
 const menuRoots = menubar ? [...menubar.querySelectorAll('.menu')] : [];

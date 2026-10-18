@@ -1024,6 +1024,32 @@ body.fullscreen.inspector-visible .body { grid-template-columns: 1fr 288px; }
 body.fullscreen.inspector-visible .workarea { grid-template-columns: var(--nav-w) 1fr; }
 
 /* ============================================================
+   STREAM SOURCE MODE (untuk TikTok Studio / OBS)
+   - nyembunyiin semua UI, canvas doang yang tampil
+   - toggle pake Alt+S atau tombol di toolbar
+   ============================================================ */
+body.stream-source .titlebar,
+body.stream-source .menubar,
+body.stream-source .toolbar,
+body.stream-source .nav,
+body.stream-source .inspector,
+body.stream-source .console { display: none !important; }
+body.stream-source .body { grid-template-rows: 1fr !important; }
+body.stream-source .workarea { grid-template-columns: 1fr !important; }
+body.stream-source .viewport { padding: 0 !important; background: #000 !important; }
+body.stream-source .screen-shell { padding: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
+body.stream-source #screen { border-radius: 0 !important; }
+body.stream-source .fs-inspector-toggle { display: none !important; }
+
+/* Tombol stream source di toolbar */
+.tool.stream-source-btn {
+  background: linear-gradient(135deg, #ff0050 0%, #ff4081 100%);
+}
+.tool.stream-source-btn:hover {
+  background: linear-gradient(135deg, #d40044 0%, #e91e63 100%);
+}
+
+/* ============================================================
    scrollbar
    ============================================================ */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
