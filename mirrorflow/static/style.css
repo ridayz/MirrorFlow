@@ -1036,9 +1036,10 @@ body.stream-source .inspector,
 body.stream-source .console { display: none !important; }
 body.stream-source .body { grid-template-rows: 1fr !important; }
 body.stream-source .workarea { grid-template-columns: 1fr !important; }
-body.stream-source .viewport { padding: 0 !important; background: #000 !important; }
-body.stream-source .screen-shell { padding: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; }
-body.stream-source #screen { border-radius: 0 !important; }
+body.stream-source .cluster { grid-template-columns: 1fr !important; }
+body.stream-source .viewport { padding: 0 !important; background: #000 !important; min-height: 0 !important; }
+body.stream-source .screen-shell { padding: 0 !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; display: block !important; }
+body.stream-source #screen { border-radius: 0 !important; width: 100% !important; height: 100% !important; }
 body.stream-source .fs-inspector-toggle { display: none !important; }
 
 /* Tombol stream source di toolbar */
